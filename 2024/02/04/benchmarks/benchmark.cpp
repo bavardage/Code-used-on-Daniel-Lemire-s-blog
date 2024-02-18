@@ -237,31 +237,75 @@ void init(float *v, size_t N) {
     v[i] = dis(gen);
   }
 }
+//int main(int argc, char **argv) {
+//  printf("please be patient, this will take a few seconds...\n");
+//  const size_t N = 1024 * 1024;
+//  std::unique_ptr<char[]> data(new char[N]);
+//  for(size_t i = 0; i < N; i++) {
+//    data.get()[i] = i % 256;
+//  }
+//  size_t volume = N;
+//  volatile size_t counter = 0;
+//  for(size_t window = 64; window <= 256; window *= 2) {
+//    printf("window = %zu\n", window);
+//    pretty_print(1, volume, "karprabin_rolling4", bench([&data, &counter, &window]() {
+//      counter += karprabin_rolling4(data.get(), N, window, 31, 0);
+//    }));
+//    pretty_print(1, volume, "karprabin_rolling4_2", bench([&data, &counter, &window]() {
+//      counter += karprabin_rolling4_2(data.get(), N, window, 31, 0);
+//    }));
+//    pretty_print(1, volume, "karprabin_rolling4_3", bench([&data, &counter, &window]() {
+//      counter += karprabin_rolling4_3(data.get(), N, window, 31, 0);
+//    }));
+//    pretty_print(1, volume, "karprabin_rolling", bench([&data, &counter, &window]() {
+//      counter += karprabin_rolling(data.get(), N, window, 31, 0);
+//    }));
+//    // pretty_print(1, volume, "karprabin_naive", bench([&data, &counter, &window]() {
+//    //   counter += karprabin_naive(data.get(), N, window, 31, 0);
+//    // }));
+//  }
+//}
+
+#include <chrono>
+#include <cstdint>
+#include <iostream>
+
+uint64_t timeSinceEpochMillisec() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+}
 int main(int argc, char **argv) {
-  printf("please be patient, this will take a few seconds...\n");
-  const size_t N = 1024 * 1024;
-  std::unique_ptr<char[]> data(new char[N]);
-  for(size_t i = 0; i < N; i++) {
-    data.get()[i] = i % 256;
-  }
-  size_t volume = N;
-  volatile size_t counter = 0;
-  for(size_t window = 64; window <= 256; window *= 2) {
-    printf("window = %zu\n", window);
-    pretty_print(1, volume, "karprabin_rolling4", bench([&data, &counter, &window]() {
-      counter += karprabin_rolling4(data.get(), N, window, 31, 0);
-    }));
-    pretty_print(1, volume, "karprabin_rolling4_2", bench([&data, &counter, &window]() {
-      counter += karprabin_rolling4_2(data.get(), N, window, 31, 0);
-    }));
-    pretty_print(1, volume, "karprabin_rolling4_3", bench([&data, &counter, &window]() {
-      counter += karprabin_rolling4_3(data.get(), N, window, 31, 0);
-    }));
-    pretty_print(1, volume, "karprabin_rolling", bench([&data, &counter, &window]() {
-      counter += karprabin_rolling(data.get(), N, window, 31, 0);
-    }));
-    // pretty_print(1, volume, "karprabin_naive", bench([&data, &counter, &window]() {
-    //   counter += karprabin_naive(data.get(), N, window, 31, 0);
-    // }));
-  }
+    printf("please be patient, this will take a few seconds...\n");
+    const size_t N = 1024 * 1024;
+    std::unique_ptr<char[]> data(new char[N]);
+    for(size_t i = 0; i < N; i++) {
+        data.get()[i] = i % 256;
+    }
+    size_t volume = N;
+    volatile size_t counter = 0;
+
+    // Warmup
+    for (int i = 0; i < 2000; i++) {
+        counter += karprabin_rolling4_3(data.get(), N, 128, 31, 0);
+    }
+
+    long start = timeSinceEpochMillisec();
+    for (int i = 0; i < 2000; i++) {
+        counter += karprabin_rolling4_3(data.get(), N, 128, 31, 0);
+    }
+    long end = timeSinceEpochMillisec();
+    printf("karprabin_rolling4_3: %d\n", (end - start));
+
+
+    // Warmup
+    for (int i = 0; i < 2000; i++) {
+        counter += karprabin_rolling4_2(data.get(), N, 128, 31, 0);
+    }
+
+    start = timeSinceEpochMillisec();
+    for (int i = 0; i < 2000; i++) {
+        counter += karprabin_rolling4_2(data.get(), N, 128, 31, 0);
+    }
+    end = timeSinceEpochMillisec();
+    printf("karprabin_rolling4_2: %d\n", (end - start));
 }
