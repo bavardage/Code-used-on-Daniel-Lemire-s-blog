@@ -8,6 +8,7 @@
 #include <random>
 #include <stdlib.h>
 #include <vector>
+#include <cmath>
 
 uint32_t karprabin_hash(const char *data, size_t len, uint32_t B) {
     uint32_t hash = 0;
@@ -325,6 +326,103 @@ size_t karprabin_rolling4_split_4(const char *data, size_t len, size_t N, uint32
     return counter;
 }
 
+size_t karprabin_rolling4_leaping_2(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
+    size_t counter = 0;
+    uint32_t BtoN = 1;
+    for (size_t i = 0; i < N; i++) {
+        BtoN *= B;
+    }
+
+    // Must be divisible by 8
+    size_t subblock_size = 16 * N;
+    size_t block_size = 2 * subblock_size;
+
+    // Exclusive index through which all hashes have been computed
+    size_t last_end = 0;
+    // Last hash that has been computed
+    uint32_t last_hash = 0;
+
+    while (last_end + block_size + N < len) {
+        // Initialize hashes
+        uint32_t hash0 = 0;
+        uint32_t hash1 = 0;
+
+        size_t i0;
+        if (last_end < N) {
+            i0 = 0;
+        } else {
+            i0 = last_end - N;
+        }
+        size_t i1 = last_end + subblock_size - N;
+
+        for (size_t i = 0; i < N; i++) {
+            hash0 = hash0 * B + data[i0++];
+            hash1 = hash1 * B + data[i1++];
+        }
+        if (hash0 == target && last_end == 0) {
+            counter++;
+        }
+        if (hash1 == target && last_end == 0) {
+            counter++;
+        }
+
+        for (size_t i = 0; i < subblock_size; i+=4) {
+            hash0 = hash0 * B + data[i0] - BtoN * data[i0 - N];
+            hash1 = hash1 * B + data[i1] - BtoN * data[i1 - N];
+            if (hash0 == target) {
+                counter++;
+            }
+            if (hash1 == target) {
+                counter++;
+            }
+
+            hash0 = hash0 * B + data[i0 + 1] - BtoN * data[i0 + 1 - N];
+            hash1 = hash1 * B + data[i1 + 1] - BtoN * data[i1 + 1 - N];
+            if (hash0 == target) {
+                counter++;
+            }
+            if (hash1 == target) {
+                counter++;
+            }
+
+            hash0 = hash0 * B + data[i0 + 2] - BtoN * data[i0 + 2 - N];
+            hash1 = hash1 * B + data[i1 + 2] - BtoN * data[i1 + 2 - N];
+            if (hash0 == target) {
+                counter++;
+            }
+            if (hash1 == target) {
+                counter++;
+            }
+
+            hash0 = hash0 * B + data[i0 + 3] - BtoN * data[i0 + 3 - N];
+            hash1 = hash1 * B + data[i1 + 3] - BtoN * data[i1 + 3 - N];
+            if (hash0 == target) {
+                counter++;
+            }
+            if (hash1 == target) {
+                counter++;
+            }
+
+            i0 += 4;
+            i1 += 4;
+        }
+
+        last_end = i1;
+        last_hash = hash1;
+    }
+
+    uint32_t hash = last_hash;
+    for (size_t i = last_end; i < len; i++) {
+        hash = hash * B + data[i] - BtoN * data[i - N];
+        if (hash == target) {
+            counter++;
+        }
+    }
+
+    return counter;
+}
+
+
 void pretty_print(size_t volume, size_t bytes, std::string name,
                   event_aggregate agg) {
     printf("%-40s : ", name.c_str());
@@ -351,7 +449,7 @@ void init(float *v, size_t N) {
 int main(int argc, char **argv) {
 
     printf("please be patient, this will take a few seconds...\n");
-    const size_t N = 100 * 1024 * 1024;
+    const size_t N = 100 * 1000 * 1000;
     std::unique_ptr<char[]> data(new char[N]);
     for (size_t i = 0; i < N; i++) {
         data.get()[i] = i % 256;
@@ -363,6 +461,7 @@ int main(int argc, char **argv) {
     printf("Reference %ld\n", karprabin_rolling(data.get(), N, 75, 31, 0));
     printf("Check %ld\n", karprabin_rolling4_split_2(data.get(), N, 75, 31, 0));
     printf("Check %ld\n", karprabin_rolling4_split_4(data.get(), N, 75, 31, 0));
+    printf("Check %ld\n", karprabin_rolling4_leaping_2(data.get(), N, 75, 31, 0));
 
     size_t volume = N;
     volatile size_t counter = 0;
@@ -376,6 +475,9 @@ int main(int argc, char **argv) {
         }));
         pretty_print(1, volume, "karprabin_rolling4_split_4", bench([&data, &counter, &window]() {
             counter += karprabin_rolling4_split_4(data.get(), N, window, 31, 0);
+        }));
+        pretty_print(1, volume, "karprabin_rolling4_leaping_2", bench([&data, &counter, &window]() {
+            counter += karprabin_rolling4_leaping_2(data.get(), N, window, 31, 0);
         }));
         pretty_print(1, volume, "karprabin_rolling", bench([&data, &counter, &window]() {
             counter += karprabin_rolling(data.get(), N, window, 31, 0);
