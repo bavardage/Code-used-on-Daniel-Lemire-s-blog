@@ -124,13 +124,18 @@ void init(float *v, size_t N) {
 }
 int main(int argc, char **argv) {
 
-    
     printf("please be patient, this will take a few seconds...\n");
-    const size_t N = 1024 * 1024;
+    const size_t N = 100 * 1024 * 1024;
     std::unique_ptr<char[]> data(new char[N]);
     for (size_t i = 0; i < N; i++) {
         data.get()[i] = i % 256;
     }
+
+    for (size_t i = N - 100000; i < N; i++) {
+        data.get()[i] = 0;
+    }
+    printf("Reference %d\n", karprabin_rolling(data.get(), N, 75, 31, 0));
+
     size_t volume = N;
     volatile size_t counter = 0;
     for (size_t window = 8; window <= 32; window *= 2) {
@@ -141,8 +146,8 @@ int main(int argc, char **argv) {
         pretty_print(1, volume, "karprabin_rolling", bench([&data, &counter, &window]() {
             counter += karprabin_rolling(data.get(), N, window, 31, 0);
         }));
-        pretty_print(1, volume, "karprabin_naive", bench([&data, &counter, &window]() {
-            counter += karprabin_naive(data.get(), N, window, 31, 0);
-        }));
+//        pretty_print(1, volume, "karprabin_naive", bench([&data, &counter, &window]() {
+//            counter += karprabin_naive(data.get(), N, window, 31, 0);
+//        }));
     }
 }
