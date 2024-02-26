@@ -770,6 +770,196 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
         + counter;
 }
 
+__attribute__ ((noinline))
+size_t karprabin_rolling4_leaping_8x4_avx512(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
+    uint32_t BtoN = 1;
+    for (size_t i = 0; i < N; i++) {
+        BtoN *= B;
+    }
+
+    size_t counter = 0;
+
+    size_t subblock_size = 16 * N;
+    size_t block_size = 2 * subblock_size;
+
+    __m512i static_targets = _mm512_broadcastd_epi32(_mm_insert_epi32(_mm_setzero_si128(), target, 0));
+//    printf("TARGET=%d\n", (int32_t) target);
+    __m512i static_bs = _mm512_broadcastd_epi32(_mm_insert_epi32(_mm_setzero_si128(), B, 0));
+    __m512i static_bs4 = _mm512_mullo_epi32(
+        static_bs,
+        _mm512_mullo_epi32(
+            static_bs,
+            _mm512_mullo_epi32(static_bs, static_bs)
+        )
+    );
+
+    __m512i offsets = _mm512_set_epi32(
+        15 * subblock_size,
+        14 * subblock_size,
+        13 * subblock_size,
+        12 * subblock_size,
+        11 * subblock_size,
+        10 * subblock_size,
+        9 * subblock_size,
+        8 * subblock_size,
+        7 * subblock_size,
+        6 * subblock_size,
+        5 * subblock_size,
+        4 * subblock_size,
+        3 * subblock_size,
+        2 * subblock_size,
+        1 * subblock_size,
+        0
+    );
+//    offsets = _mm512_insert_epi32(offsets, _mm_insert_epi32(, 0), 0);
+//    offsets = _mm512_insert_epi32(offsets, subblock_size, 1);
+//    offsets = _mm512_insert_epi32(offsets, 2 * subblock_size, 2);
+//    offsets = _mm512_insert_epi32(offsets, 3 * subblock_size, 3);
+//    offsets = _mm512_insert_epi32(offsets, 4 * subblock_size, 4);
+//    offsets = _mm512_insert_epi32(offsets, 5 * subblock_size, 5);
+//    offsets = _mm512_insert_epi32(offsets, 6 * subblock_size, 6);
+//    offsets = _mm512_insert_epi32(offsets, 7 * subblock_size, 7);
+//    offsets = _mm512_insert_epi32(offsets, 8 * subblock_size, 8);
+//    offsets = _mm512_insert_epi32(offsets, 9 * subblock_size, 9);
+//    offsets = _mm512_insert_epi32(offsets, 10 * subblock_size, 10);
+//    offsets = _mm512_insert_epi32(offsets, 11 * subblock_size, 11);
+//    offsets = _mm512_insert_epi32(offsets, 12 * subblock_size, 12);
+//    offsets = _mm512_insert_epi32(offsets, 13 * subblock_size, 13);
+//    offsets = _mm512_insert_epi32(offsets, 14 * subblock_size, 14);
+//    offsets = _mm512_insert_epi32(offsets, 15 * subblock_size, 15);
+    __m512i ones = _mm512_set_epi32(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1);
+    __m512i hashes = _mm512_setzero_si512();
+    const char* block_start = data;
+    while ((block_start - data) + block_size + N < len) {
+        // Initialize hashes
+        hashes = _mm512_setzero_si512();
+//        __m256i targets = static_targets;
+        // All ones
+        __m512i bs1 = ones;
+        __m512i bs2;
+        __m512i bs3;
+        __m512i bs4;
+
+        for (size_t i = 0; i < N; i++) {
+            __m512i as = _mm512_srai_epi32(
+                _mm512_slli_epi32(
+                    _mm512_i32gather_epi32(offsets, block_start + i, 1),
+                    24
+                ),
+                24
+            );
+            hashes = _mm512_add_epi32(
+                hashes,
+                _mm512_mullo_epi32(as, bs1)
+            );
+            bs1 = _mm512_mullo_epi32(bs1, static_bs);
+//            DEBUG_YMM(hashes);
+        }
+        bs2 = _mm512_mullo_epi32(bs1, static_bs);
+        bs3 = _mm512_mullo_epi32(bs2, static_bs);
+        bs4 = _mm512_mullo_epi32(bs3, static_bs);
+
+        __m512i bns1 = ones;
+        __m512i bns2 = _mm512_mullo_epi32(bns1, static_bs);
+        __m512i bns3 = _mm512_mullo_epi32(bns2, static_bs);
+        __m512i bns4 = _mm512_mullo_epi32(bns3, static_bs);
+
+        __m512i targets1 = _mm512_mullo_epi32(static_targets, static_bs);
+//        DEBUG_YMM(static_targets);
+        __m512i targets2 = _mm512_mullo_epi32(targets1, static_bs);
+        __m512i targets3 = _mm512_mullo_epi32(targets2, static_bs);
+        __m512i targets4 = _mm512_mullo_epi32(targets3, static_bs);
+
+        uint32_t first = _mm_extract_epi32(_mm512_extracti32x4_epi32(hashes, 0), 0);
+        if (first == target) {
+            counter++;
+        }
+//        printf("\n");
+//        printf("\n");
+
+        for (size_t i = 0; i < subblock_size; i+=4) {
+            __m512i as = _mm512_i32gather_epi32(
+                offsets,
+                block_start + i + N,
+                1
+            );
+            __m512i ans = _mm512_i32gather_epi32(
+                offsets,
+                block_start + i,
+                1
+            );
+
+            // Value 0
+            hashes = _mm512_sub_epi32(
+                _mm512_add_epi32(
+                    hashes,
+                    _mm512_mullo_epi32(_mm512_srai_epi32(_mm512_slli_epi32(as, 24), 24), bs1)
+                ),
+                _mm512_mullo_epi32(_mm512_srai_epi32(_mm512_slli_epi32(ans, 24), 24), bns1)
+            );
+            counter += __builtin_popcount(_mm512_cmpeq_epi32_mask(hashes, targets1));
+
+            // Value 1
+            hashes = _mm512_sub_epi32(
+                _mm512_add_epi32(
+                    hashes,
+                    _mm512_mullo_epi32(_mm512_srai_epi32(_mm512_slli_epi32(as, 16), 24), bs2)
+                ),
+                _mm512_mullo_epi32(_mm512_srai_epi32(_mm512_slli_epi32(ans, 16), 24), bns2)
+            );
+            counter += __builtin_popcount(_mm512_cmpeq_epi32_mask(hashes, targets2));
+
+            // Value 3
+            hashes = _mm512_sub_epi32(
+                _mm512_add_epi32(
+                    hashes,
+                    _mm512_mullo_epi32(_mm512_srai_epi32(_mm512_slli_epi32(as, 8), 24), bs3)
+                ),
+                _mm512_mullo_epi32(_mm512_srai_epi32(_mm512_slli_epi32(ans, 8), 24), bns3)
+            );
+            counter += __builtin_popcount(_mm512_cmpeq_epi32_mask(hashes, targets3));
+
+            // Value 4
+            hashes = _mm512_sub_epi32(
+                _mm512_add_epi32(
+                    hashes,
+                    _mm512_mullo_epi32(_mm512_srai_epi32(as, 24), bs4)
+                ),
+                _mm512_mullo_epi32(_mm512_srai_epi32(ans, 24), bns4)
+            );
+            counter += __builtin_popcount(_mm512_cmpeq_epi32_mask(hashes, targets4));
+
+            // Update all factors
+            bs1 = _mm512_mullo_epi32(bs1, static_bs4);
+            bs2 = _mm512_mullo_epi32(bs2, static_bs4);
+            bs3 = _mm512_mullo_epi32(bs3, static_bs4);
+            bs4 = _mm512_mullo_epi32(bs4, static_bs4);
+            bns1 = _mm512_mullo_epi32(bns1, static_bs4);
+            bns2 = _mm512_mullo_epi32(bns2, static_bs4);
+            bns3 = _mm512_mullo_epi32(bns3, static_bs4);
+            bns4 = _mm512_mullo_epi32(bns4, static_bs4);
+            targets1 = _mm512_mullo_epi32(targets1, static_bs4);
+            targets2 = _mm512_mullo_epi32(targets2, static_bs4);
+            targets3 = _mm512_mullo_epi32(targets3, static_bs4);
+            targets4 = _mm512_mullo_epi32(targets4, static_bs4);
+        }
+
+//        DEBUG_YMM(counts);
+        block_start += block_size + 1;
+    }
+
+    size_t last_end = (block_start - data) + N - 1;
+    counter += karprabin_rolling(
+        data + last_end - N + 1,
+        len - last_end + N,
+        N,
+        B,
+        target
+    );
+
+    return counter;
+}
+
 
 void pretty_print(size_t volume, size_t bytes, std::string name,
                   event_aggregate agg) {
