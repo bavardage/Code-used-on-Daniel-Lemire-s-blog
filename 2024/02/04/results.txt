@@ -1,0 +1,58 @@
+window = 64
+karprabin_rolling4                       :   0.73 GB/s    0.0 Ma/s  136240955.00 ns/d 
+karprabin_rolling4_split_2               :   1.25 GB/s    0.0 Ma/s  79701115.00 ns/d 
+karprabin_rolling4_split_4               :   1.26 GB/s    0.0 Ma/s  79607457.00 ns/d 
+karprabin_rolling4_leaping_2x4           :   1.20 GB/s    0.0 Ma/s  83218565.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2      :   1.59 GB/s    0.0 Ma/s  62805390.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2_2    :   1.86 GB/s    0.0 Ma/s  53833192.00 ns/d 
+karprabin_rolling                        :   0.73 GB/s    0.0 Ma/s  136583539.00 ns/d 
+window = 128
+karprabin_rolling4                       :   0.73 GB/s    0.0 Ma/s  136280597.00 ns/d 
+karprabin_rolling4_split_2               :   1.25 GB/s    0.0 Ma/s  79729353.00 ns/d 
+karprabin_rolling4_split_4               :   1.26 GB/s    0.0 Ma/s  79608509.00 ns/d 
+karprabin_rolling4_leaping_2x4           :   1.19 GB/s    0.0 Ma/s  84369434.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2      :   1.57 GB/s    0.0 Ma/s  63687179.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2_2    :   1.80 GB/s    0.0 Ma/s  55409526.00 ns/d 
+karprabin_rolling                        :   0.73 GB/s    0.0 Ma/s  136570217.00 ns/d 
+window = 256
+karprabin_rolling4                       :   0.73 GB/s    0.0 Ma/s  136257189.00 ns/d 
+karprabin_rolling4_split_2               :   1.25 GB/s    0.0 Ma/s  79723211.00 ns/d 
+karprabin_rolling4_split_4               :   1.26 GB/s    0.0 Ma/s  79580448.00 ns/d 
+karprabin_rolling4_leaping_2x4           :   1.19 GB/s    0.0 Ma/s  83920963.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2      :   1.58 GB/s    0.0 Ma/s  63247892.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2_2    :   1.85 GB/s    0.0 Ma/s  54040939.00 ns/d 
+karprabin_rolling                        :   0.73 GB/s    0.0 Ma/s  136571409.00 ns/d 
+window = 512
+karprabin_rolling4                       :   0.73 GB/s    0.0 Ma/s  136292346.00 ns/d 
+karprabin_rolling4_split_2               :   1.25 GB/s    0.0 Ma/s  79735914.00 ns/d 
+karprabin_rolling4_split_4               :   1.26 GB/s    0.0 Ma/s  79601919.00 ns/d 
+karprabin_rolling4_leaping_2x4           :   1.20 GB/s    0.0 Ma/s  83348942.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2      :   1.56 GB/s    0.0 Ma/s  64126532.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2_2    :   1.83 GB/s    0.0 Ma/s  54765820.00 ns/d 
+karprabin_rolling                        :   0.73 GB/s    0.0 Ma/s  136569324.00 ns/d 
+window = 1024
+karprabin_rolling4                       :   0.73 GB/s    0.0 Ma/s  136295673.00 ns/d 
+karprabin_rolling4_split_2               :   1.25 GB/s    0.0 Ma/s  79718089.00 ns/d 
+karprabin_rolling4_split_4               :   1.26 GB/s    0.0 Ma/s  79599456.00 ns/d 
+karprabin_rolling4_leaping_2x4           :   1.20 GB/s    0.0 Ma/s  83131825.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2      :   1.59 GB/s    0.0 Ma/s  62827743.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2_2    :   1.86 GB/s    0.0 Ma/s  53775228.00 ns/d 
+karprabin_rolling                        :   0.73 GB/s    0.0 Ma/s  136620539.00 ns/d 
+window = 2048
+karprabin_rolling4                       :   0.73 GB/s    0.0 Ma/s  136299941.00 ns/d 
+karprabin_rolling4_split_2               :   1.25 GB/s    0.0 Ma/s  79718329.00 ns/d 
+karprabin_rolling4_split_4               :   1.26 GB/s    0.0 Ma/s  79627019.00 ns/d 
+karprabin_rolling4_leaping_2x4           :   1.20 GB/s    0.0 Ma/s  83003968.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2      :   1.61 GB/s    0.0 Ma/s  62128963.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2_2    :   1.88 GB/s    0.0 Ma/s  53138779.00 ns/d 
+karprabin_rolling                        :   0.73 GB/s    0.0 Ma/s  136573107.00 ns/d 
+window = 4096
+karprabin_rolling4                       :   0.73 GB/s    0.0 Ma/s  136272719.00 ns/d 
+karprabin_rolling4_split_2               :   1.25 GB/s    0.0 Ma/s  79827458.00 ns/d 
+karprabin_rolling4_split_4               :   1.26 GB/s    0.0 Ma/s  79677454.00 ns/d 
+karprabin_rolling4_leaping_2x4           :   1.20 GB/s    0.0 Ma/s  83242039.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2      :   1.61 GB/s    0.0 Ma/s  62225353.00 ns/d 
+karprabin_rolling4_leaping_8x4_avx2_2    :   1.79 GB/s    0.0 Ma/s  55946661.00 ns/d 
+karprabin_rolling                        :   0.73 GB/s    0.0 Ma/s  136608640.00 ns/d
+
+Intel(R) Xeon(R) Platinum 8481C CPU @ 2.70GHz
