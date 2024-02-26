@@ -771,7 +771,7 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
 }
 
 __attribute__ ((noinline))
-size_t karprabin_rolling4_leaping_8x4_avx512(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
+size_t karprabin_rolling4_leaping_16x2_avx512(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
     uint32_t BtoN = 1;
     for (size_t i = 0; i < N; i++) {
         BtoN *= B;
@@ -1009,6 +1009,7 @@ int main(int argc, char **argv) {
     printf("Check %ld\n", karprabin_rolling4_leaping_2x4(data.get(), N, 75, 31, target));
     printf("Check %ld\n", karprabin_rolling4_leaping_8x4_avx2(data.get(), N, 75, 31, target));
     printf("Check %ld\n", karprabin_rolling4_leaping_8x4_avx2_2(data.get(), N, 75, 31, target));
+    printf("Check %ld\n", karprabin_rolling4_leaping_16x2_avx512(data.get(), N, 75, 31, target));
 
     size_t volume = N;
     volatile size_t counter = 0;
@@ -1030,6 +1031,9 @@ int main(int argc, char **argv) {
             counter += karprabin_rolling4_leaping_8x4_avx2(data.get(), N, window, 31, target);
         }));
         pretty_print(1, volume, "karprabin_rolling4_leaping_8x4_avx2_2", bench([&data, &counter, &window, &target]() {
+            counter += karprabin_rolling4_leaping_8x4_avx2_2(data.get(), N, window, 31, target);
+        }));
+        pretty_print(1, volume, "karprabin_rolling4_leaping_16x2_avx512", bench([&data, &counter, &window, &target]() {
             counter += karprabin_rolling4_leaping_8x4_avx2_2(data.get(), N, window, 31, target);
         }));
         pretty_print(1, volume, "karprabin_rolling", bench([&data, &counter, &window, &target]() {
