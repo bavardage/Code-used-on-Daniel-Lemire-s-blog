@@ -16,6 +16,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="30b05ce2-5817-4c0f-8509-d0b6595dcdde" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/benchmarks/benchmark.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/benchmarks/benchmark.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
