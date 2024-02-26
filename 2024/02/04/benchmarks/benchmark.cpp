@@ -845,8 +845,5 @@ int main(int argc, char **argv) {
         pretty_print(1, volume, "karprabin_rolling", bench([&data, &counter, &window, &target]() {
             counter += karprabin_rolling(data.get(), N, window, 31, target);
         }));
-        pretty_print(1, volume, "karprabin_naive", bench([&data, &counter, &window]() {
-            counter += karprabin_naive(data.get(), N, window, 31, 0);
-        }));
     }
 }
