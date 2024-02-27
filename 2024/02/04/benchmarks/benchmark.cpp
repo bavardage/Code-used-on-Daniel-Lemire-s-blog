@@ -60,6 +60,28 @@ size_t karprabin_rolling(const char *data, size_t len, size_t N, uint32_t B, uin
 }
 
 __attribute__ ((noinline))
+size_t sum_rolling(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
+    size_t counter = 0;
+
+    uint32_t hash = 0;
+    for (size_t i = 0; i < N; i++) {
+        hash = hash + data[i];
+    }
+    if (hash == target) {
+        counter++;
+    }
+    for (size_t i = N; i < len; i++) {
+        hash = hash + data[i] - data[i - N];
+        // karprabin_hash(data+i-N+1, N, B) == hash
+        if (hash == target) {
+            counter++;
+        }
+    }
+    return counter;
+}
+
+
+__attribute__ ((noinline))
 size_t karprabin_rolling4(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
     size_t counter = 0;
     uint32_t BtoN = 1;
@@ -826,6 +848,9 @@ int main(int argc, char **argv) {
         printf("window = %zu\n", window);
         pretty_print(1, volume, "karprabin_rolling4", bench([&data, &counter, &window, &target]() {
             counter += karprabin_rolling4(data.get(), N, window, 31, target);
+        }));
+        pretty_print(1, volume, "sum_rolling", bench([&data, &counter, &window, &target]() {
+            counter += sum_rolling(data.get(), N, window, 31, target);
         }));
         pretty_print(1, volume, "karprabin_rolling4_split_2", bench([&data, &counter, &window, &target]() {
             counter += karprabin_rolling4_split_2(data.get(), N, window, 31, target);
