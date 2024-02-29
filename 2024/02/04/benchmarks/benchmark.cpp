@@ -60,8 +60,6 @@ size_t karprabin_rolling(const char *data, size_t len, size_t N, uint32_t B, uin
 }
 
 __attribute__ ((noinline))
-<<<<<<< Updated upstream
-=======
 size_t sum_rolling(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
     size_t counter = 0;
 
@@ -83,7 +81,6 @@ size_t sum_rolling(const char *data, size_t len, size_t N, uint32_t B, uint32_t 
 
 
 __attribute__ ((noinline))
->>>>>>> Stashed changes
 size_t karprabin_rolling4(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
     size_t counter = 0;
     uint32_t BtoN = 1;
