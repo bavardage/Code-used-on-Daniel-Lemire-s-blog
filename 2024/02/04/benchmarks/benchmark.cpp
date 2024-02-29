@@ -458,6 +458,28 @@ size_t karprabin_rolling4_leaping_2x4(const char *data, size_t len, size_t N, ui
     return counter;
 }
 
+static inline __m256i constant_ymm(uint32_t x) {
+    return _mm256_set_epi32(x, x, x, x, x, x, x, x);
+}
+
+// Byte extractors
+
+static inline __m256i byte0(__m256i bytes) {
+    return _mm256_srai_epi32(_mm256_slli_epi32(bytes, 24), 24);
+}
+
+static inline __m256i byte1(__m256i bytes) {
+    return _mm256_srai_epi32(_mm256_slli_epi32(bytes, 16), 24);
+}
+
+static inline __m256i byte2(__m256i bytes) {
+    return _mm256_srai_epi32(_mm256_slli_epi32(bytes, 8), 24);
+}
+
+static inline __m256i byte3(__m256i bytes) {
+    return _mm256_srai_epi32(bytes, 24);
+}
+
 __attribute__ ((noinline))
 size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
     uint32_t BtoN = 1;
@@ -470,9 +492,9 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
     size_t subblock_size = 4 * N;
     size_t block_size = 8 * subblock_size;
 
-    __m256i targets = _mm256_set_epi32(target, target, target, target, target, target, target, target);
-    __m256i bs = _mm256_set_epi32(B, B, B, B, B, B, B, B);
-    __m256i bns = _mm256_set_epi32(BtoN, BtoN, BtoN, BtoN, BtoN, BtoN, BtoN, BtoN);
+    __m256i targets = constant_ymm(target);
+    __m256i bs = constant_ymm(B);
+    __m256i bns = constant_ymm(BtoN);
     __m256i offsets = _mm256_set_epi32(
         7 * subblock_size,
         6 * subblock_size,
@@ -510,11 +532,13 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
         }
 
         for (size_t i = 0; i < subblock_size; i+=4) {
+            // Values to be added in
             __m256i as = _mm256_i32gather_epi32(
                 (const int*) (block_start + i + N),
                 offsets,
                 1
             );
+            // Values to be dropped off
             __m256i ans = _mm256_i32gather_epi32(
                 (const int*) (block_start + i),
                 offsets,
@@ -525,9 +549,9 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
             hashes = _mm256_sub_epi32(
                 _mm256_add_epi32(
                     _mm256_mullo_epi32(hashes, bs),
-                    _mm256_srai_epi32(_mm256_slli_epi32(as, 24), 24)
+                    byte0(as)
                 ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 24), 24), bns)
+                _mm256_mullo_epi32(byte0(ans), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
 
@@ -535,9 +559,9 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
             hashes = _mm256_sub_epi32(
                 _mm256_add_epi32(
                     _mm256_mullo_epi32(hashes, bs),
-                    _mm256_srai_epi32(_mm256_slli_epi32(as, 16), 24)
+                    byte1(as)
                 ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 16), 24), bns)
+                _mm256_mullo_epi32(byte1(ans), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
 
@@ -545,9 +569,9 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
             hashes = _mm256_sub_epi32(
                 _mm256_add_epi32(
                     _mm256_mullo_epi32(hashes, bs),
-                    _mm256_srai_epi32(_mm256_slli_epi32(as, 8), 24)
+                    byte2(as)
                 ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 8), 24), bns)
+                _mm256_mullo_epi32(byte2(ans), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
 
@@ -555,9 +579,9 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
             hashes = _mm256_sub_epi32(
                 _mm256_add_epi32(
                     _mm256_mullo_epi32(hashes, bs),
-                    _mm256_srai_epi32(as, 24)
+                    byte3(as)
                 ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(ans, 24), bns)
+                _mm256_mullo_epi32(byte3(ans), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
         }
@@ -565,8 +589,8 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
         block_start += block_size + 1;
     }
 
+    // Deal with what's left over
     size_t last_end = (block_start - data) + N - 1;
-
     uint32_t hash = _mm256_extract_epi32(hashes, 7);
     for (size_t i = last_end; i < len; i++) {
         hash = hash * B + data[i] - BtoN * data[i - N];
@@ -577,6 +601,7 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
 
     return counter;
 }
+
 
 __attribute__ ((noinline))
 size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_t N, uint32_t B, uint32_t target) {
@@ -590,34 +615,27 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
     size_t subblock_size = 4 * N;
     size_t block_size = 8 * subblock_size;
 
-    __m256i counts = _mm256_setzero_si256();
-    __m256i static_targets = _mm256_broadcastd_epi32(_mm_insert_epi32(_mm_setzero_si128(), target, 0));
-//    printf("TARGET=%d\n", (int32_t) target);
-    __m256i static_bs = _mm256_broadcastd_epi32(_mm_insert_epi32(_mm_setzero_si128(), B, 0));
-    __m256i static_bs4 = _mm256_mullo_epi32(
-        static_bs,
-        _mm256_mullo_epi32(
-            static_bs,
-            _mm256_mullo_epi32(static_bs, static_bs)
-        )
+    __m256i static_targets = constant_ymm(target);
+
+    __m256i static_bs = constant_ymm(B);
+    __m256i static_bs4 = constant_ymm(B*B*B*B);
+
+    __m256i offsets = _mm256_set_epi32(
+        7 * subblock_size,
+        6 * subblock_size,
+        5 * subblock_size,
+        4 * subblock_size,
+        3 * subblock_size,
+        2 * subblock_size,
+        subblock_size,
+        0
     );
 
-    __m256i offsets = _mm256_setzero_si256();
-    offsets = _mm256_insert_epi32(offsets, 0, 0);
-    offsets = _mm256_insert_epi32(offsets, subblock_size, 1);
-    offsets = _mm256_insert_epi32(offsets, 2 * subblock_size, 2);
-    offsets = _mm256_insert_epi32(offsets, 3 * subblock_size, 3);
-    offsets = _mm256_insert_epi32(offsets, 4 * subblock_size, 4);
-    offsets = _mm256_insert_epi32(offsets, 5 * subblock_size, 5);
-    offsets = _mm256_insert_epi32(offsets, 6 * subblock_size, 6);
-    offsets = _mm256_insert_epi32(offsets, 7 * subblock_size, 7);
-
-    __m256i hashes = _mm256_setzero_si256();
     const char* block_start = data;
     while ((block_start - data) + block_size + N < len) {
         // Initialize hashes
-        hashes = _mm256_setzero_si256();
-//        __m256i targets = static_targets;
+        _m256i hashes = _mm256_setzero_si256();
+
         // All ones
         __m256i bs1 = _mm256_srli_epi32(_mm256_cmpeq_epi32(_mm256_setzero_si256(), _mm256_setzero_si256()), 31);
         __m256i bs2;
@@ -637,7 +655,6 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
                 _mm256_mullo_epi32(as, bs1)
             );
             bs1 = _mm256_mullo_epi32(bs1, static_bs);
-//            DEBUG_YMM(hashes);
         }
         bs2 = _mm256_mullo_epi32(bs1, static_bs);
         bs3 = _mm256_mullo_epi32(bs2, static_bs);
@@ -649,7 +666,6 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
         __m256i bns4 = _mm256_mullo_epi32(bns3, static_bs);
 
         __m256i targets1 = _mm256_mullo_epi32(static_targets, static_bs);
-//        DEBUG_YMM(static_targets);
         __m256i targets2 = _mm256_mullo_epi32(targets1, static_bs);
         __m256i targets3 = _mm256_mullo_epi32(targets2, static_bs);
         __m256i targets4 = _mm256_mullo_epi32(targets3, static_bs);
@@ -658,8 +674,6 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
         if (first == target) {
             counter++;
         }
-//        printf("\n");
-//        printf("\n");
 
         for (size_t i = 0; i < subblock_size; i+=4) {
             __m256i as = _mm256_i32gather_epi32(
@@ -677,70 +691,41 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
             hashes = _mm256_sub_epi32(
                 _mm256_add_epi32(
                     hashes,
-                    _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(as, 24), 24), bs1)
+                    _mm256_mullo_epi32(byte0(as), bs1)
                 ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 24), 24), bns1)
+                _mm256_mullo_epi32(byte0(ans), bns1)
             );
-            __m256i matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets1), 31);
-            counts = _mm256_add_epi32(counts, matches);
-//            DEBUG_YMM(targets1);
-//            DEBUG_YMM(hashes);
-//            DEBUG_YMM(bs1);
-//            DEBUG_YMM(bns1);
-
-            // TODO: With more registers, do not compute these on the fly
-//            targets = _mm256_mullo_epi32(targets, static_targets);
+            counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets1));
 
             // Value 1
             hashes = _mm256_sub_epi32(
                 _mm256_add_epi32(
                     hashes,
-                    _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(as, 16), 24), bs2)
+                    _mm256_mullo_epi32(byte1(as), bs2)
                 ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 16), 24), bns2)
+                _mm256_mullo_epi32(byte1(ans), bns2)
             );
-            matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets2), 31);
-            counts = _mm256_add_epi32(counts, matches);
-            // TODO: With more registers, do not compute these on the fly
-//            targets = _mm256_mullo_epi32(targets, static_targets);
-//            DEBUG_YMM(targets2);
-//            DEBUG_YMM(hashes);
-//            DEBUG_YMM(bs2);
-//            DEBUG_YMM(bns2);
+            counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets2));
+
+            // Value 2
+            hashes = _mm256_sub_epi32(
+                _mm256_add_epi32(
+                    hashes,
+                    _mm256_mullo_epi32(byte2(as), bs3)
+                ),
+                _mm256_mullo_epi32(byte2(ans), bns3)
+            );
+            counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets3));
 
             // Value 3
             hashes = _mm256_sub_epi32(
                 _mm256_add_epi32(
                     hashes,
-                    _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(as, 8), 24), bs3)
+                    _mm256_mullo_epi32(byte3(as), bs4)
                 ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 8), 24), bns3)
+                _mm256_mullo_epi32(byte3(ans), bns4)
             );
-            matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets3), 31);
-            counts = _mm256_add_epi32(counts, matches);
-            // TODO: With more registers, do not compute these on the fly
-//            targets = _mm256_mullo_epi32(targets, static_targets);
-//            DEBUG_YMM(targets3);
-//            DEBUG_YMM(hashes);
-//            DEBUG_YMM(bs3);
-//            DEBUG_YMM(bns3);
-
-            // Value 4
-            hashes = _mm256_sub_epi32(
-                _mm256_add_epi32(
-                    hashes,
-                    _mm256_mullo_epi32(_mm256_srai_epi32(as, 24), bs4)
-                ),
-                _mm256_mullo_epi32(_mm256_srai_epi32(ans, 24), bns4)
-            );
-            matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets4), 31);
-            counts = _mm256_add_epi32(counts, matches);
-            // TODO: With more registers, do not compute these on the fly
-//            targets = _mm256_mullo_epi32(targets, static_targets);
-//            DEBUG_YMM(targets4);
-//            DEBUG_YMM(hashes);
-//            DEBUG_YMM(bs4);
-//            DEBUG_YMM(bns4);
+            counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets4));
 
             // Update all factors
             bs1 = _mm256_mullo_epi32(bs1, static_bs4);
@@ -757,7 +742,6 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
             targets4 = _mm256_mullo_epi32(targets4, static_bs4);
         }
 
-//        DEBUG_YMM(counts);
         block_start += block_size + 1;
     }
 
@@ -770,15 +754,7 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
         target
     );
 
-    return _mm256_extract_epi32(counts, 0)
-        + _mm256_extract_epi32(counts, 1)
-        + _mm256_extract_epi32(counts, 2)
-        + _mm256_extract_epi32(counts, 3)
-        + _mm256_extract_epi32(counts, 4)
-        + _mm256_extract_epi32(counts, 5)
-        + _mm256_extract_epi32(counts, 6)
-        + _mm256_extract_epi32(counts, 7)
-        + counter;
+    return counter;
 }
 
 __attribute__ ((noinline))
