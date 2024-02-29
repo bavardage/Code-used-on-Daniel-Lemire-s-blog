@@ -631,7 +631,7 @@ size_t karprabin_rolling4_leaping_8x4_avx2_2(const char *data, size_t len, size_
     const char* block_start = data;
     while ((block_start - data) + block_size + N < len) {
         // Initialize hashes
-        _m256i hashes = _mm256_setzero_si256();
+        __m256i hashes = _mm256_setzero_si256();
 
         // All ones
         __m256i bs1 = _mm256_srli_epi32(_mm256_cmpeq_epi32(_mm256_setzero_si256(), _mm256_setzero_si256()), 31);
