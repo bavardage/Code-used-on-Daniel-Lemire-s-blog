@@ -470,19 +470,19 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
     size_t subblock_size = 4 * N;
     size_t block_size = 8 * subblock_size;
 
-    __m256i counts = _mm256_setzero_si256();
-    __m256i targets = _mm256_broadcastd_epi32(_mm_insert_epi32(_mm_setzero_si128(), target, 0));
-    __m256i bs = _mm256_broadcastd_epi32(_mm_insert_epi32(_mm_setzero_si128(), B, 0));
-    __m256i bns = _mm256_broadcastd_epi32(_mm_insert_epi32(_mm_setzero_si128(), BtoN, 0));
-    __m256i offsets = _mm256_setzero_si256();
-    offsets = _mm256_insert_epi32(offsets, 0, 0);
-    offsets = _mm256_insert_epi32(offsets, subblock_size, 1);
-    offsets = _mm256_insert_epi32(offsets, 2 * subblock_size, 2);
-    offsets = _mm256_insert_epi32(offsets, 3 * subblock_size, 3);
-    offsets = _mm256_insert_epi32(offsets, 4 * subblock_size, 4);
-    offsets = _mm256_insert_epi32(offsets, 5 * subblock_size, 5);
-    offsets = _mm256_insert_epi32(offsets, 6 * subblock_size, 6);
-    offsets = _mm256_insert_epi32(offsets, 7 * subblock_size, 7);
+    __m256i targets = _mm256_set_epi32(target, target, target, target, target, target, target, target);
+    __m256i bs = _mm256_set_epi32(B, B, B, B, B, B, B, B);
+    __m256i bns = _mm256_set_epi32(BtoN, BtoN, BtoN, BtoN, BtoN, BtoN, BtoN, BtoN);
+    __m256i offsets = _mm256_set_epi32(
+        7 * subblock_size,
+        6 * subblock_size,
+        5 * subblock_size,
+        4 * subblock_size,
+        3 * subblock_size,
+        2 * subblock_size,
+        subblock_size,
+        0
+    );
 
     __m256i hashes = _mm256_setzero_si256();
     const char* block_start = data;
@@ -530,8 +530,6 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
                 _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 24), 24), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
-//            __m256i matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets), 31);
-//            counts = _mm256_add_epi32(counts, matches);
 
             // Value 1
             hashes = _mm256_sub_epi32(
@@ -542,9 +540,6 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
                 _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 16), 24), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
-//
-//            matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets), 31);
-//            counts = _mm256_add_epi32(counts, matches);
 
             // Value 3
             hashes = _mm256_sub_epi32(
@@ -555,9 +550,6 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
                 _mm256_mullo_epi32(_mm256_srai_epi32(_mm256_slli_epi32(ans, 8), 24), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
-//
-//            matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets), 31);
-//            counts = _mm256_add_epi32(counts, matches);
 
             // Value 4
             hashes = _mm256_sub_epi32(
@@ -568,12 +560,8 @@ size_t karprabin_rolling4_leaping_8x4_avx2(const char *data, size_t len, size_t 
                 _mm256_mullo_epi32(_mm256_srai_epi32(ans, 24), bns)
             );
             counter += __builtin_popcount(_mm256_cmpeq_epi32_mask(hashes, targets));
-//
-//            matches = _mm256_srli_epi32(_mm256_cmpeq_epi32(hashes, targets), 31);
-//            counts = _mm256_add_epi32(counts, matches);
         }
 
-//        DEBUG_YMM(counts);
         block_start += block_size + 1;
     }
 
