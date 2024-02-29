@@ -1018,7 +1018,7 @@ int main(int argc, char **argv) {
             counter += karprabin_rolling4_leaping_8x4_avx2_2(data.get(), N, window, 31, target);
         }));
         pretty_print(1, volume, "karprabin_rolling4_leaping_16x2_avx512", bench([&data, &counter, &window, &target]() {
-            counter += karprabin_rolling4_leaping_8x4_avx2_2(data.get(), N, window, 31, target);
+            counter += karprabin_rolling4_leaping_16x2_avx512(data.get(), N, window, 31, target);
         }));
         pretty_print(1, volume, "karprabin_rolling", bench([&data, &counter, &window, &target]() {
             counter += karprabin_rolling(data.get(), N, window, 31, target);
