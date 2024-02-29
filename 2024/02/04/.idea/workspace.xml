@@ -15,7 +15,13 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
+<<<<<<< Updated upstream
     <list default="true" id="30b05ce2-5817-4c0f-8509-d0b6595dcdde" name="Changes" comment="" />
+=======
+    <list default="true" id="30b05ce2-5817-4c0f-8509-d0b6595dcdde" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/benchmarks/benchmark.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/benchmarks/benchmark.cpp" afterDir="false" />
+    </list>
+>>>>>>> Stashed changes
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
